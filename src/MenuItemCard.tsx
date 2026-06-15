@@ -1,17 +1,19 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { MenuItem } from './menuService';
+import type { MenuItem, Category } from './menuService';
 import { GripVertical, Flame, ShoppingBag, EyeOff, Pause, Check } from 'lucide-react';
 
 interface MenuItemCardProps {
   item: MenuItem;
+  categories: Category[];
   onStatusChange: (id: string, status: 'available' | 'paused' | 'hidden') => void;
   onOrderChange?: (id: string, newOrder: number) => void;
   onLocalHide?: (id: string) => void;
+  onCategoryChange?: (id: string, category_id: string) => void;
 }
 
-export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onStatusChange, onOrderChange, onLocalHide }) => {
+export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, categories, onStatusChange, onOrderChange, onLocalHide, onCategoryChange }) => {
   const {
     attributes,
     listeners,
@@ -139,9 +141,27 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onStatusChange
 
           {/* Category & Display Order indicators */}
           <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-700/50 text-xs text-slate-400">
-            <span className="bg-slate-700/50 px-2 py-0.5 rounded text-[11px] font-medium border border-slate-700">
-              {item.categories?.name || 'بدون تصنيف'}
-            </span>
+            <div
+              className="relative bg-slate-700/50 rounded border border-slate-700 focus-within:border-rose-500/50 transition-colors"
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <select
+                value={item.category_id}
+                onChange={(e) => {
+                  if (onCategoryChange && e.target.value !== item.category_id) {
+                    onCategoryChange(item.id, e.target.value);
+                  }
+                }}
+                className="appearance-none bg-transparent text-[11px] font-medium text-slate-300 px-2 py-0.5 pr-5 cursor-pointer outline-none w-full"
+              >
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id} className="bg-slate-800 text-slate-200">
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+              <span className="pointer-events-none absolute left-1 top-1/2 -translate-y-1/2 text-slate-400 text-[9px]">▾</span>
+            </div>
             <div 
               className="flex items-center gap-1 font-mono bg-slate-900/50 px-2 py-0.5 rounded border border-slate-800 focus-within:border-rose-500/50 transition-colors"
               onPointerDown={(e) => e.stopPropagation()} // Prevent drag start when interacting with input

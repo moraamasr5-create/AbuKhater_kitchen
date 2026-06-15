@@ -38,6 +38,7 @@ export const KitchenMenuControl: React.FC = () => {
     error: itemsError,
     updateStatus,
     updateMenuItemsOrder,
+    updateItemCategory,
   } = useMenuItems();
 
   const {
@@ -89,6 +90,12 @@ export const KitchenMenuControl: React.FC = () => {
   const handleOrderChange = (id: string, newOrder: number) => {
     updateMenuItemsOrder([{ id, display_order: newOrder }]);
     triggerToast('تم تحديث ترتيب الصنف بنجاح');
+  };
+
+  const handleCategoryChange = (id: string, category_id: string) => {
+    const cat = categories.find((c) => c.id === category_id);
+    updateItemCategory({ id, category_id });
+    triggerToast(`تم نقل الصنف إلى: ${cat?.name || 'تصنيف جديد'}`);
   };
 
   // Drag End handler for menu items sorting
@@ -343,10 +350,12 @@ export const KitchenMenuControl: React.FC = () => {
                   {filteredItems.map((item) => (
                     <MenuItemCard 
                       key={item.id} 
-                      item={item} 
+                      item={item}
+                      categories={categories}
                       onStatusChange={handleStatusChange} 
                       onOrderChange={handleOrderChange}
                       onLocalHide={handleLocalHide}
+                      onCategoryChange={handleCategoryChange}
                     />
                   ))}
                 </div>

@@ -72,6 +72,19 @@ export const menuService = {
     return data;
   },
 
+  // Update menu item category
+  async updateMenuItemCategory(id: string, category_id: string): Promise<MenuItem> {
+    const { data, error } = await supabase
+      .from('menu_items')
+      .update({ category_id, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select('*, categories(*)')
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
   // Update menu items orders in bulk
   async updateMenuItemsOrder(items: { id: string; display_order: number }[]): Promise<void> {
     // For Supabase, doing bulk update of display_order can be done using upsert

@@ -69,6 +69,33 @@ export function useMenuItems() {
     },
   });
 
+  // Mutate category of individual item (Optimistic Update)
+  const categoryMutation = useMutation({
+    mutationFn: ({ id, category_id }: { id: string; category_id: string }) =>
+      menuService.updateMenuItemCategory(id, category_id),
+    onMutate: async ({ id, category_id }) => {
+      await queryClient.cancelQueries({ queryKey: ['menuItems'] });
+      const previousItems = queryClient.getQueryData<MenuItem[]>(['menuItems']);
+
+      if (previousItems) {
+        const updated = previousItems.map((item) =>
+          item.id === id ? { ...item, category_id, updated_at: new Date().toISOString() } : item
+        );
+        queryClient.setQueryData<MenuItem[]>(['menuItems'], updated);
+      }
+
+      return { previousItems };
+    },
+    onError: (_err, _variables, context) => {
+      if (context?.previousItems) {
+        queryClient.setQueryData(['menuItems'], context.previousItems);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['menuItems'] });
+    },
+  });
+
   return {
     menuItems: query.data || [],
     isLoading: query.isLoading,
@@ -77,5 +104,7 @@ export function useMenuItems() {
     isUpdatingStatus: statusMutation.isPending,
     updateMenuItemsOrder: orderMutation.mutate,
     isUpdatingOrder: orderMutation.isPending,
+    updateItemCategory: categoryMutation.mutate,
+    isUpdatingCategory: categoryMutation.isPending,
   };
 }
