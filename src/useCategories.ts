@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { menuService, Category } from './menuService';
+import { menuService } from './menuService';
+import type { Category } from './menuService';
 
 export function useCategories() {
   const queryClient = useQueryClient();

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { menuService, MenuItem } from './menuService';
+import { menuService } from './menuService';
+import type { MenuItem } from './menuService';
 
 export function useMenuItems() {
   const queryClient = useQueryClient();

@@ -1,8 +1,8 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { MenuItem } from './menuService';
-import { GripVertical, Flame, Star, ShoppingBag, EyeOff, Pause, Check } from 'lucide-react';
+import type { MenuItem } from './menuService';
+import { GripVertical, Flame, ShoppingBag, EyeOff, Pause, Check } from 'lucide-react';
 
 interface MenuItemCardProps {
   item: MenuItem;
