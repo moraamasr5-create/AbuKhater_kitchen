@@ -91,40 +91,58 @@ export const menuService = {
   },
 
   /**
-   * Sends a request to N8N to generate an AI image for a menu item.
-   * N8N is expected to: call Replicate → upload to Supabase Storage → update menu_items.image_url
-   * Returns the updated MenuItem with the new image_url.
+   * يُرسل طلب POST إلى N8N webhook لتوليد صورة AI لعنصر القائمة.
    *
-   * Expected N8N Webhook Input (POST body):
-   *   { item_id: string, item_name: string, category_name: string }
+   * POST body → { item_id, item_name, category_name }
+   * Response  → { success: true, image_url: string } | { success: false, error: string }
    *
-   * Expected N8N Webhook Response:
-   *   { success: true, image_url: string }  |  { success: false, error: string }
+   * يُرجع image_url فقط عند النجاح، ويطبع خطأ واضح عند الفشل.
+   * لا يتعامل مع Supabase — فقط اتصال بـ N8N.
    */
-  async generateItemImage(item: Pick<MenuItem, 'id' | 'name'> & { category_name?: string }): Promise<{ image_url: string }> {
-    if (!n8nWebhookUrl) throw new Error('VITE_N8N_WEBHOOK_URL is not configured.');
-
-    const response = await fetch(n8nWebhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        item_id: item.id,
-        item_name: item.name,
-        category_name: item.category_name || '',
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`N8N webhook error: ${response.status} ${response.statusText}`);
+  async generateItemImage(
+    item: { id: string; name: string; category_name?: string }
+  ): Promise<string> {
+    if (!n8nWebhookUrl) {
+      const msg = '❌ VITE_N8N_WEBHOOK_URL غير معرّف. أضفه في ملف .env وأعد تشغيل الخادم.';
+      console.error(msg);
+      throw new Error(msg);
     }
 
-    const result = await response.json();
+    try {
+      const response = await fetch(n8nWebhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          item_id: item.id,
+          item_name: item.name,
+          category_name: item.category_name ?? '',
+        }),
+      });
 
-    if (!result.success || !result.image_url) {
-      throw new Error(result.error || 'N8N did not return a valid image_url.');
+      if (!response.ok) {
+        const msg = `❌ N8N webhook فشل: ${response.status} ${response.statusText}`;
+        console.error(msg);
+        throw new Error(msg);
+      }
+
+      const result = await response.json() as {
+        success: boolean;
+        image_url?: string;
+        error?: string;
+      };
+
+      if (!result.success || !result.image_url) {
+        const msg = `❌ N8N لم يُرجع صورة: ${result.error || 'لا يوجد image_url في الاستجابة'}`;
+        console.error(msg);
+        throw new Error(msg);
+      }
+
+      console.log(`✅ تم توليد صورة لـ "${item.name}":`, result.image_url);
+      return result.image_url;
+    } catch (err) {
+      console.error(`❌ خطأ أثناء توليد صورة لـ "${item.name}":`, err);
+      throw err;
     }
-
-    return { image_url: result.image_url };
   },
 
 
