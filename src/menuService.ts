@@ -2,16 +2,11 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-const n8nWebhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL || '';
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn(
     'Supabase credentials missing. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.'
   );
-}
-
-if (!n8nWebhookUrl) {
-  console.warn('N8N Webhook URL missing. Please set VITE_N8N_WEBHOOK_URL in your .env file.');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -102,14 +97,15 @@ export const menuService = {
   async generateItemImage(
     item: { id: string; name: string; category_name?: string }
   ): Promise<string> {
-    if (!n8nWebhookUrl) {
+    const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL;
+    if (!webhookUrl) {
       const msg = '❌ VITE_N8N_WEBHOOK_URL غير معرّف. أضفه في ملف .env وأعد تشغيل الخادم.';
       console.error(msg);
       throw new Error(msg);
     }
 
     try {
-      const response = await fetch(n8nWebhookUrl, {
+      const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
