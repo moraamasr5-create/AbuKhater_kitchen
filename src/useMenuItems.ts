@@ -96,6 +96,17 @@ export function useMenuItems() {
     },
   });
 
+  // Generate AI image via N8N → Replicate → Supabase Storage
+  const generateImageMutation = useMutation({
+    mutationFn: (item: { id: string; name: string; category_name?: string }) =>
+      menuService.generateItemImage(item),
+    onSuccess: (_data, variables) => {
+      // Invalidate to refetch the updated image_url from Supabase after N8N saves it
+      queryClient.invalidateQueries({ queryKey: ['menuItems'] });
+      console.log(`[generateImage] Image generated for: ${variables.name}`);
+    },
+  });
+
   return {
     menuItems: query.data || [],
     isLoading: query.isLoading,
@@ -106,5 +117,7 @@ export function useMenuItems() {
     isUpdatingOrder: orderMutation.isPending,
     updateItemCategory: categoryMutation.mutate,
     isUpdatingCategory: categoryMutation.isPending,
+    generateImage: generateImageMutation.mutate,
+    isGeneratingImageId: generateImageMutation.isPending ? generateImageMutation.variables?.id : null,
   };
 }

@@ -2,11 +2,16 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const n8nWebhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL || '';
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn(
     'Supabase credentials missing. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file.'
   );
+}
+
+if (!n8nWebhookUrl) {
+  console.warn('N8N Webhook URL missing. Please set VITE_N8N_WEBHOOK_URL in your .env file.');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -85,7 +90,44 @@ export const menuService = {
     return data;
   },
 
-  // Update menu items orders in bulk
+  /**
+   * Sends a request to N8N to generate an AI image for a menu item.
+   * N8N is expected to: call Replicate → upload to Supabase Storage → update menu_items.image_url
+   * Returns the updated MenuItem with the new image_url.
+   *
+   * Expected N8N Webhook Input (POST body):
+   *   { item_id: string, item_name: string, category_name: string }
+   *
+   * Expected N8N Webhook Response:
+   *   { success: true, image_url: string }  |  { success: false, error: string }
+   */
+  async generateItemImage(item: Pick<MenuItem, 'id' | 'name'> & { category_name?: string }): Promise<{ image_url: string }> {
+    if (!n8nWebhookUrl) throw new Error('VITE_N8N_WEBHOOK_URL is not configured.');
+
+    const response = await fetch(n8nWebhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        item_id: item.id,
+        item_name: item.name,
+        category_name: item.category_name || '',
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`N8N webhook error: ${response.status} ${response.statusText}`);
+    }
+
+    const result = await response.json();
+
+    if (!result.success || !result.image_url) {
+      throw new Error(result.error || 'N8N did not return a valid image_url.');
+    }
+
+    return { image_url: result.image_url };
+  },
+
+
   async updateMenuItemsOrder(items: { id: string; display_order: number }[]): Promise<void> {
     // For Supabase, doing bulk update of display_order can be done using upsert
     // We select only the columns we need to update to prevent clearing other data, or we update them individually in a transaction/promise.all

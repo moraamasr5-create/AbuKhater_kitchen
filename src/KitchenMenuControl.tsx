@@ -39,6 +39,8 @@ export const KitchenMenuControl: React.FC = () => {
     updateStatus,
     updateMenuItemsOrder,
     updateItemCategory,
+    generateImage,
+    isGeneratingImageId,
   } = useMenuItems();
 
   const {
@@ -96,6 +98,12 @@ export const KitchenMenuControl: React.FC = () => {
     const cat = categories.find((c) => c.id === category_id);
     updateItemCategory({ id, category_id });
     triggerToast(`تم نقل الصنف إلى: ${cat?.name || 'تصنيف جديد'}`);
+  };
+
+  // Handle AI image generation request for an item
+  const handleGenerateImage = (item: { id: string; name: string; category_name?: string }) => {
+    generateImage(item);
+    triggerToast(`🪄 طلب توليد صورة للمنتج: ${item.name}`);
   };
 
   // Drag End handler for menu items sorting
@@ -356,6 +364,8 @@ export const KitchenMenuControl: React.FC = () => {
                       onOrderChange={handleOrderChange}
                       onLocalHide={handleLocalHide}
                       onCategoryChange={handleCategoryChange}
+                      onGenerateImage={handleGenerateImage}
+                      isGenerating={isGeneratingImageId === item.id}
                     />
                   ))}
                 </div>

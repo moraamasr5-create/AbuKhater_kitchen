@@ -2,7 +2,7 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { MenuItem, Category } from './menuService';
-import { GripVertical, Flame, ShoppingBag, EyeOff, Pause, Check } from 'lucide-react';
+import { GripVertical, Flame, ShoppingBag, EyeOff, Pause, Check, Sparkles, Loader2 } from 'lucide-react';
 
 interface MenuItemCardProps {
   item: MenuItem;
@@ -11,9 +11,11 @@ interface MenuItemCardProps {
   onOrderChange?: (id: string, newOrder: number) => void;
   onLocalHide?: (id: string) => void;
   onCategoryChange?: (id: string, category_id: string) => void;
+  onGenerateImage?: (item: { id: string; name: string; category_name?: string }) => void;
+  isGenerating?: boolean;
 }
 
-export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, categories, onStatusChange, onOrderChange, onLocalHide, onCategoryChange }) => {
+export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, categories, onStatusChange, onOrderChange, onLocalHide, onCategoryChange, onGenerateImage, isGenerating }) => {
   const {
     attributes,
     listeners,
@@ -101,6 +103,37 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, categories, on
               <ShoppingBag className="w-8 h-8 opacity-40" />
             </div>
           )}
+
+          {/* AI Generate overlay — visible on hover or while loading */}
+          <div
+            onPointerDown={(e) => e.stopPropagation()}
+            className={`absolute inset-0 flex items-end justify-center pb-3 transition-opacity duration-200 ${
+              isGenerating ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+            }`}
+          >
+            {isGenerating ? (
+              <div className="flex items-center gap-2 bg-slate-900/90 border border-violet-500/40 text-violet-300 text-xs font-semibold px-3 py-1.5 rounded-lg shadow-lg">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                جاري توليد الصورة...
+              </div>
+            ) : (
+              <button
+                onClick={() =>
+                  onGenerateImage &&
+                  onGenerateImage({
+                    id: item.id,
+                    name: item.name,
+                    category_name: item.categories?.name || '',
+                  })
+                }
+                className="flex items-center gap-1.5 bg-slate-900/90 hover:bg-violet-600/90 border border-slate-700 hover:border-violet-500 text-slate-300 hover:text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow-lg transition-all duration-200"
+                title="توليد صورة بالذكاء الاصطناعي"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                نسج صورة AI
+              </button>
+            )}
+          </div>
 
           {/* Indicators */}
           <div className="absolute top-2 right-2 flex gap-1.5">
