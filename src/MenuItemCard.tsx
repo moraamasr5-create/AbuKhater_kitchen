@@ -6,10 +6,11 @@ import { GripVertical, Flame, ShoppingBag, EyeOff, Pause, Check } from 'lucide-r
 
 interface MenuItemCardProps {
   item: MenuItem;
-  onStatusChange: (id: string, status: 'available' | 'paused' | 'hidden') => void;
+  onStatusChange: (id: string, status: 'available' | 'paused' | 'hidden' | 'hidden_frontend') => void;
+  onOrderChange?: (id: string, newOrder: number) => void;
 }
 
-export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onStatusChange }) => {
+export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onStatusChange, onOrderChange }) => {
   const {
     attributes,
     listeners,
@@ -18,6 +19,24 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onStatusChange
     transition,
     isDragging,
   } = useSortable({ id: item.id });
+
+  const [orderValue, setOrderValue] = React.useState(item.display_order.toString());
+  const [showHiddenMenu, setShowHiddenMenu] = React.useState(false);
+  const hiddenMenuRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    setOrderValue(item.display_order.toString());
+  }, [item.display_order]);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (hiddenMenuRef.current && !hiddenMenuRef.current.contains(event.target as Node)) {
+        setShowHiddenMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -45,7 +64,14 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onStatusChange
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-500/15 text-slate-400 border border-slate-500/25">
             <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-            مخفي
+            مخفي للجميع
+          </span>
+        );
+      case 'hidden_frontend':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-500/15 text-slate-400 border border-slate-500/25">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+            مخفي (الامامية)
           </span>
         );
     }
@@ -58,7 +84,7 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onStatusChange
       className={`relative flex flex-col justify-between bg-slate-800 border rounded-2xl overflow-hidden transition-all duration-300 ${
         item.status === 'paused'
           ? 'border-amber-500/25 bg-slate-800/65 grayscale-[35%]'
-          : item.status === 'hidden'
+          : item.status === 'hidden' || item.status === 'hidden_frontend'
           ? 'border-slate-700/50 opacity-60'
           : 'border-slate-700 hover:border-slate-600'
       }`}
@@ -122,9 +148,31 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onStatusChange
             <span className="bg-slate-700/50 px-2 py-0.5 rounded text-[11px] font-medium border border-slate-700">
               {item.categories?.name || 'بدون تصنيف'}
             </span>
-            <span className="flex items-center gap-1 font-mono bg-slate-900/50 px-2 py-0.5 rounded border border-slate-800">
-              ترتيب: {item.display_order}
-            </span>
+            <div 
+              className="flex items-center gap-1 font-mono bg-slate-900/50 px-2 py-0.5 rounded border border-slate-800 focus-within:border-rose-500/50 transition-colors"
+              onPointerDown={(e) => e.stopPropagation()} // Prevent drag start when interacting with input
+            >
+              <span className="text-slate-400">ترتيب:</span>
+              <input
+                type="number"
+                value={orderValue}
+                onChange={(e) => setOrderValue(e.target.value)}
+                onBlur={() => {
+                  const val = parseInt(orderValue, 10);
+                  if (!isNaN(val) && val !== item.display_order && onOrderChange) {
+                    onOrderChange(item.id, val);
+                  } else {
+                    setOrderValue(item.display_order.toString());
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.currentTarget.blur();
+                  }
+                }}
+                className="w-10 bg-transparent border-none outline-none text-slate-200 text-center text-[11px] font-bold p-0 m-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -155,17 +203,43 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onStatusChange
           متوقف
         </button>
 
-        <button
-          onClick={() => onStatusChange(item.id, 'hidden')}
-          className={`flex items-center justify-center gap-1 py-2 px-1.5 rounded-lg text-xs font-semibold transition-all ${
-            item.status === 'hidden'
-              ? 'bg-slate-700 text-slate-300 border border-slate-600'
-              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/80'
-          }`}
-        >
-          <EyeOff className="w-3.5 h-3.5" />
-          مخفي
-        </button>
+        <div className="relative flex flex-col" ref={hiddenMenuRef}>
+          <button
+            onClick={() => setShowHiddenMenu(!showHiddenMenu)}
+            className={`w-full flex items-center justify-center gap-1 py-2 px-1.5 rounded-lg text-xs font-semibold transition-all ${
+              item.status === 'hidden' || item.status === 'hidden_frontend'
+                ? 'bg-slate-700 text-slate-300 border border-slate-600'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/80'
+            }`}
+          >
+            <EyeOff className="w-3.5 h-3.5" />
+            مخفي
+          </button>
+          
+          {showHiddenMenu && (
+            <div className="absolute bottom-full left-0 right-0 mb-2 bg-slate-800 border border-slate-700 rounded-xl shadow-xl overflow-hidden z-10 flex flex-col whitespace-nowrap min-w-max">
+              <button
+                onClick={() => {
+                  onStatusChange(item.id, 'hidden_frontend');
+                  setShowHiddenMenu(false);
+                }}
+                className={`text-right px-3 py-2.5 text-xs hover:bg-slate-700 transition-colors ${item.status === 'hidden_frontend' ? 'bg-slate-700/50 text-slate-200 font-bold' : 'text-slate-400'}`}
+              >
+                اخفاء (من الامامية فقط)
+              </button>
+              <div className="h-px bg-slate-700/50"></div>
+              <button
+                onClick={() => {
+                  onStatusChange(item.id, 'hidden');
+                  setShowHiddenMenu(false);
+                }}
+                className={`text-right px-3 py-2.5 text-xs hover:bg-slate-700 transition-colors ${item.status === 'hidden' ? 'bg-slate-700/50 text-slate-200 font-bold' : 'text-slate-400'}`}
+              >
+                للجميع
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

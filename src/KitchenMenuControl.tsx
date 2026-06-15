@@ -73,17 +73,23 @@ export const KitchenMenuControl: React.FC = () => {
   );
 
   // Status handler with Optimistic Toast message
-  const handleStatusChange = (id: string, status: 'available' | 'paused' | 'hidden') => {
+  const handleStatusChange = (id: string, status: 'available' | 'paused' | 'hidden' | 'hidden_frontend') => {
     const item = menuItems.find((i) => i.id === id);
     if (!item) return;
 
     let statusText = '';
     if (status === 'available') statusText = 'متاح للطلب';
     if (status === 'paused') statusText = 'غير متاح مؤقتاً';
-    if (status === 'hidden') statusText = 'مخفي من القائمة';
+    if (status === 'hidden') statusText = 'مخفي للجميع';
+    if (status === 'hidden_frontend') statusText = 'مخفي من الأمامية';
 
     updateStatus({ id, status });
     triggerToast(`تم تحديث حالة "${item.name}" إلى: ${statusText}`);
+  };
+
+  const handleOrderChange = (id: string, newOrder: number) => {
+    updateMenuItemsOrder([{ id, display_order: newOrder }]);
+    triggerToast('تم تحديث ترتيب الصنف بنجاح');
   };
 
   // Drag End handler for menu items sorting
@@ -114,7 +120,7 @@ export const KitchenMenuControl: React.FC = () => {
   const totalItems = menuItems.length;
   const availableCount = menuItems.filter((i) => i.status === 'available').length;
   const pausedCount = menuItems.filter((i) => i.status === 'paused').length;
-  const hiddenCount = menuItems.filter((i) => i.status === 'hidden').length;
+  const hiddenCount = menuItems.filter((i) => i.status === 'hidden' || i.status === 'hidden_frontend').length;
 
   // Filtering Logic
   const filteredItems = menuItems.filter((item) => {
@@ -129,7 +135,7 @@ export const KitchenMenuControl: React.FC = () => {
     let matchesTab = true;
     if (activeFilter === 'available') matchesTab = item.status === 'available';
     else if (activeFilter === 'paused') matchesTab = item.status === 'paused';
-    else if (activeFilter === 'hidden') matchesTab = item.status === 'hidden';
+    else if (activeFilter === 'hidden') matchesTab = item.status === 'hidden' || item.status === 'hidden_frontend';
     else if (activeFilter === 'popular') matchesTab = item.is_popular;
 
     return matchesSearch && matchesCategory && matchesTab;
@@ -323,7 +329,12 @@ export const KitchenMenuControl: React.FC = () => {
               <SortableContext items={filteredItems.map((item) => item.id)} strategy={rectSortingStrategy}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
                   {filteredItems.map((item) => (
-                    <MenuItemCard key={item.id} item={item} onStatusChange={handleStatusChange} />
+                    <MenuItemCard 
+                      key={item.id} 
+                      item={item} 
+                      onStatusChange={handleStatusChange} 
+                      onOrderChange={handleOrderChange} 
+                    />
                   ))}
                 </div>
               </SortableContext>

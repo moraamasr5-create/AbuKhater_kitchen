@@ -12,7 +12,7 @@ export function useMenuItems() {
 
   // Mutate status of individual item (Optimistic Update)
   const statusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: 'available' | 'paused' | 'hidden' }) =>
+    mutationFn: ({ id, status }: { id: string; status: 'available' | 'paused' | 'hidden' | 'hidden_frontend' }) =>
       menuService.updateMenuItemStatus(id, status),
     onMutate: async ({ id, status }) => {
       await queryClient.cancelQueries({ queryKey: ['menuItems'] });
