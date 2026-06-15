@@ -6,11 +6,12 @@ import { GripVertical, Flame, ShoppingBag, EyeOff, Pause, Check } from 'lucide-r
 
 interface MenuItemCardProps {
   item: MenuItem;
-  onStatusChange: (id: string, status: 'available' | 'paused' | 'hidden' | 'hidden_frontend') => void;
+  onStatusChange: (id: string, status: 'available' | 'paused' | 'hidden') => void;
   onOrderChange?: (id: string, newOrder: number) => void;
+  onLocalHide?: (id: string) => void;
 }
 
-export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onStatusChange, onOrderChange }) => {
+export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onStatusChange, onOrderChange, onLocalHide }) => {
   const {
     attributes,
     listeners,
@@ -67,13 +68,6 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onStatusChange
             مخفي للجميع
           </span>
         );
-      case 'hidden_frontend':
-        return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-500/15 text-slate-400 border border-slate-500/25">
-            <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
-            مخفي (الامامية)
-          </span>
-        );
     }
   };
 
@@ -84,7 +78,7 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onStatusChange
       className={`relative flex flex-col justify-between bg-slate-800 border rounded-2xl overflow-hidden transition-all duration-300 ${
         item.status === 'paused'
           ? 'border-amber-500/25 bg-slate-800/65 grayscale-[35%]'
-          : item.status === 'hidden' || item.status === 'hidden_frontend'
+          : item.status === 'hidden'
           ? 'border-slate-700/50 opacity-60'
           : 'border-slate-700 hover:border-slate-600'
       }`}
@@ -207,7 +201,7 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onStatusChange
           <button
             onClick={() => setShowHiddenMenu(!showHiddenMenu)}
             className={`w-full flex items-center justify-center gap-1 py-2 px-1.5 rounded-lg text-xs font-semibold transition-all ${
-              item.status === 'hidden' || item.status === 'hidden_frontend'
+              item.status === 'hidden'
                 ? 'bg-slate-700 text-slate-300 border border-slate-600'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/80'
             }`}
@@ -220,10 +214,10 @@ export const MenuItemCard: React.FC<MenuItemCardProps> = ({ item, onStatusChange
             <div className="absolute bottom-full left-0 right-0 mb-2 bg-slate-800 border border-slate-700 rounded-xl shadow-xl overflow-hidden z-10 flex flex-col whitespace-nowrap min-w-max">
               <button
                 onClick={() => {
-                  onStatusChange(item.id, 'hidden_frontend');
+                  if (onLocalHide) onLocalHide(item.id);
                   setShowHiddenMenu(false);
                 }}
-                className={`text-right px-3 py-2.5 text-xs hover:bg-slate-700 transition-colors ${item.status === 'hidden_frontend' ? 'bg-slate-700/50 text-slate-200 font-bold' : 'text-slate-400'}`}
+                className="text-right px-3 py-2.5 text-xs hover:bg-slate-700 transition-colors text-slate-400"
               >
                 اخفاء (من الامامية فقط)
               </button>

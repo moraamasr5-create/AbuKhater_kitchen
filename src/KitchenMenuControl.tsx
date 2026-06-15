@@ -73,7 +73,7 @@ export const KitchenMenuControl: React.FC = () => {
   );
 
   // Status handler with Optimistic Toast message
-  const handleStatusChange = (id: string, status: 'available' | 'paused' | 'hidden' | 'hidden_frontend') => {
+  const handleStatusChange = (id: string, status: 'available' | 'paused' | 'hidden') => {
     const item = menuItems.find((i) => i.id === id);
     if (!item) return;
 
@@ -81,7 +81,6 @@ export const KitchenMenuControl: React.FC = () => {
     if (status === 'available') statusText = 'متاح للطلب';
     if (status === 'paused') statusText = 'غير متاح مؤقتاً';
     if (status === 'hidden') statusText = 'مخفي للجميع';
-    if (status === 'hidden_frontend') statusText = 'مخفي من الأمامية';
 
     updateStatus({ id, status });
     triggerToast(`تم تحديث حالة "${item.name}" إلى: ${statusText}`);
@@ -120,10 +119,23 @@ export const KitchenMenuControl: React.FC = () => {
   const totalItems = menuItems.length;
   const availableCount = menuItems.filter((i) => i.status === 'available').length;
   const pausedCount = menuItems.filter((i) => i.status === 'paused').length;
-  const hiddenCount = menuItems.filter((i) => i.status === 'hidden' || i.status === 'hidden_frontend').length;
+  const hiddenCount = menuItems.filter((i) => i.status === 'hidden').length;
+
+  const [locallyHiddenItems, setLocallyHiddenItems] = useState<Set<string>>(new Set());
+
+  const handleLocalHide = (id: string) => {
+    setLocallyHiddenItems((prev) => {
+      const newSet = new Set(prev);
+      newSet.add(id);
+      return newSet;
+    });
+    triggerToast('تم إخفاء الصنف من الواجهة الحالية فقط');
+  };
 
   // Filtering Logic
   const filteredItems = menuItems.filter((item) => {
+    if (locallyHiddenItems.has(item.id)) return false;
+
     // Search
     const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (item.description?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
@@ -135,7 +147,7 @@ export const KitchenMenuControl: React.FC = () => {
     let matchesTab = true;
     if (activeFilter === 'available') matchesTab = item.status === 'available';
     else if (activeFilter === 'paused') matchesTab = item.status === 'paused';
-    else if (activeFilter === 'hidden') matchesTab = item.status === 'hidden' || item.status === 'hidden_frontend';
+    else if (activeFilter === 'hidden') matchesTab = item.status === 'hidden';
     else if (activeFilter === 'popular') matchesTab = item.is_popular;
 
     return matchesSearch && matchesCategory && matchesTab;
@@ -333,7 +345,8 @@ export const KitchenMenuControl: React.FC = () => {
                       key={item.id} 
                       item={item} 
                       onStatusChange={handleStatusChange} 
-                      onOrderChange={handleOrderChange} 
+                      onOrderChange={handleOrderChange}
+                      onLocalHide={handleLocalHide}
                     />
                   ))}
                 </div>

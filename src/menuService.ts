@@ -28,7 +28,7 @@ export interface MenuItem {
   image_url: string | null;
   unit_type: string | null;
   base_qty: number | null;
-  status: 'available' | 'paused' | 'hidden' | 'hidden_frontend';
+  status: 'available' | 'paused' | 'hidden';
   is_popular: boolean;
   display_order: number;
   created_at: string;
@@ -60,7 +60,7 @@ export const menuService = {
   },
 
   // Update menu item status
-  async updateMenuItemStatus(id: string, status: 'available' | 'paused' | 'hidden' | 'hidden_frontend'): Promise<MenuItem> {
+  async updateMenuItemStatus(id: string, status: 'available' | 'paused' | 'hidden'): Promise<MenuItem> {
     const { data, error } = await supabase
       .from('menu_items')
       .update({ status, updated_at: new Date().toISOString() })
@@ -112,7 +112,7 @@ export const menuService = {
     const { data, error } = await supabase
       .from('menu_items')
       .select('*')
-      .not('status', 'in', '("hidden","hidden_frontend")')
+      .neq('status', 'hidden')
       .order('display_order', { ascending: true });
 
     if (error) throw error;
